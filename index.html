@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ADSS • Project & Event Management System</title>
+<meta name="description" content="ADSS Project & Event Management System — plan, execute, and evaluate events and projects with timelines and status tracking." />
+
+<!-- TailwindCSS CDN -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          brand: {50:"#F9FAFB",100:"#F3F4F6",200:"#E5E7EB",300:"#D1D5DB",400:"#9CA3AF",500:"#6B7280",600:"#4B5563",700:"#374151",800:"#1F2937",900:"#111827"},
+          gold:  {50:"#F9F5EE",100:"#F3EAD8",200:"#E9DBB7",300:"#DFCFA0",400:"#CFB783",500:"#C5A572",600:"#A5854F",700:"#80663B",800:"#59462A",900:"#3C2F1C"},
+          emerald:{500:"#10B981"}, danger:{500:"#EF4444"}, info:{500:"#3B82F6"}
+        },
+        boxShadow:{ soft:"0 10px 30px rgba(17,24,39,.08)" },
+        fontFamily:{ sans:["Inter","ui-sans-serif","system-ui"], display:["Playfair Display","serif"] }
+      }
+    }
+  }
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  html{scroll-behavior:smooth}
+  .badge{display:inline-flex;align-items:center;gap:.5rem;font-size:.75rem;font-weight:600;padding:.25rem .625rem;border-radius:999px}
+  .card{border-radius:1rem;background:#fff;border:1px solid rgba(0,0,0,.05);box-shadow:0 10px 30px rgba(17,24,39,.08)}
+  .btn{display:inline-flex;align-items:center;justify-content:center;border-radius:.75rem;padding:.5rem 1rem;font-weight:600;transition:all .15s}
+  .btn-primary{color:#fff;background:linear-gradient(90deg,#C5A572,#DFCFA0)}
+  .btn-ghost{background:#fff;border:1px solid rgba(0,0,0,.1);color:#374151}
+  .btn:hover{transform:translateY(-1px)}
+  .tl-dot{width:18px;height:18px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:.8rem;color:#fff}
+  .tl-rail{height:3px}
+  .tl-mini-dot{width:10px;height:10px;border-radius:999px}
+</style>
+</head>
+<body class="bg-brand-50 text-brand-800">
+
+<!-- NAV -->
+<header class="sticky top-0 z-40 bg-white/80 backdrop-blur border-b border-black/5">
+  <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <img src="https://dummyimage.com/120x36/ffffff/000&text=ADSS" class="h-9 w-auto" alt="ADSS Logo">
+      <div class="leading-tight">
+        <div class="font-display text-xl text-brand-900">ADSS Project & Event Management</div>
+        <div class="text-xs text-brand-500">Operations & Event Leads</div>
+      </div>
+    </div>
+    <div class="flex items-center gap-3">
+      <span id="roleChip" class="badge bg-brand-100 text-brand-700">Guest</span>
+      <button id="loginBtn" class="btn btn-ghost">Login</button>
+      <button id="logoutBtn" class="btn btn-ghost hidden">Logout</button>
+    </div>
+  </div>
+</header>
+
+<!-- MAIN -->
+<main class="max-w-7xl mx-auto px-6 py-8 space-y-8">
+
+  <!-- TOP -->
+  <section class="grid md:grid-cols-3 gap-6">
+    <div class="card p-5">
+      <div class="flex items-center justify-between">
+        <h2 class="font-semibold text-brand-900">Create New Event</h2>
+        <span class="badge bg-gold-50 text-gold-700 border" style="border-color:#E9DBB7">Admin</span>
+      </div>
+      <p class="text-sm text-brand-500 mt-1">Add a start date & planned durations. Timeline is auto-calculated.</p>
+      <button id="openCreateModal" class="btn btn-primary mt-4 w-full disabled:opacity-50" disabled>Create Event</button>
+      <p class="text-xs text-brand-500 mt-2">Max active events on dashboard: <strong>8</strong></p>
+    </div>
+
+    <div class="card p-5">
+      <h2 class="font-semibold text-brand-900">Event Calendar</h2>
+      <p class="text-sm text-brand-500 mt-1">Planned event dates and flyer slots.</p>
+      <div class="mt-3 flex gap-2">
+        <button id="prevMonth" class="btn btn-ghost">◀</button>
+        <div id="calTitle" class="font-semibold self-center"></div>
+        <button id="nextMonth" class="btn btn-ghost">▶</button>
+      </div>
+      <div id="calendar" class="mt-3 grid grid-cols-7 gap-1 text-center text-sm"></div>
+      <div class="mt-2 text-xs text-left">
+        <div class="inline-flex items-center gap-2"><span class="inline-block w-2 h-2 rounded-full bg-info-500"></span> <span>Event Date</span></div>
+        <div class="inline-flex items-center gap-2 ml-4"><span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span> <span>Flyer Share</span></div>
+      </div>
+    </div>
+
+    <div class="card p-5">
+      <h2 class="font-semibold text-brand-900">Quick Filters</h2>
+      <div class="mt-3 grid grid-cols-2 gap-3">
+        <button class="btn btn-ghost" data-filter="all">All</button>
+        <button class="btn btn-ghost" data-filter="ontime">On-time</button>
+        <button class="btn btn-ghost" data-filter="delayed">Delayed</button>
+        <button class="btn btn-ghost" data-filter="today">Due Today</button>
+      </div>
+      <p class="text-xs text-brand-500 mt-3">Filters apply to the event cards below.</p>
+    </div>
+  </section>
+
+  <!-- DASHBOARD -->
+  <section class="space-y-3">
+    <div class="flex items-center justify-between">
+      <h2 class="font-display text-2xl text-brand-900">Active Events</h2>
+      <div class="text-sm text-brand-500" id="activeCount">0/8 active</div>
+    </div>
+    <div id="eventGrid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+  </section>
+
+  <!-- ARCHIVE -->
+  <section class="space-y-3">
+    <div class="flex items-center justify-between">
+      <h2 class="font-display text-2xl text-brand-900">Finished (Archive)</h2>
+      <button id="clearArchive" class="btn btn-ghost">Clear Archive</button>
+    </div>
+    <div id="archiveList" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+  </section>
+</main>
+
+<!-- CREATE MODAL -->
+<div id="createModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center p-4">
+  <div class="card w-full max-w-2xl p-6 relative">
+    <button class="absolute right-3 top-3 btn btn-ghost" id="closeCreateModal">✕</button>
+    <h3 class="text-xl font-semibold text-brand-900 mb-1">Create / Edit Event</h3>
+    <p class="text-sm text-brand-500 mb-4">Set the project start date and durations for each step.</p>
+
+    <div class="grid sm:grid-cols-2 gap-4">
+      <div>
+        <label class="text-xs text-brand-500">Event Name</label>
+        <input id="evName" class="mt-1 w-full rounded-lg border border-black/10 px-3 py-2" placeholder="e.g., ADSS Analytics Summit" />
+      </div>
+      <div>
+        <label class="text-xs text-brand-500">Owner / Lead</label>
+        <input id="evOwner" class="mt-1 w-full rounded-lg border border-black/10 px-3 py-2" placeholder="e.g., Operations Team" />
+      </div>
+      <div>
+        <label class="text-xs text-brand-500">Project Start Date</label>
+        <input id="evStart" type="date" class="mt-1 w-full rounded-lg border border-black/10 px-3 py-2" />
+      </div>
+      <div>
+        <label class="text-xs text-brand-500">Event Date (target)</label>
+        <input id="evDate" type="date" class="mt-1 w-full rounded-lg border border-black/10 px-3 py-2" />
+      </div>
+    </div>
+
+    <div class="mt-5">
+      <h4 class="font-semibold text-brand-900">Step Durations (days from previous milestone)</h4>
+      <div class="grid sm:grid-cols-3 gap-3 mt-2">
+        <div><label class="text-xs text-brand-500">Initial Discussion</label><input id="d_discuss" type="number" min="0" value="2" class="mt-1 w-full rounded-lg border border-black/10 px-3 py-2" /></div>
+        <div><label class="text-xs text-brand-500">Exec Board Approval</label><input id="d_exec" type="number" min="0" value="3" class="mt-1 w-full rounded-lg border border-black/10 px-3 py-2" /></div>
+        <div><label class="text-xs text-brand-500">Approval Process</label><input id="d_approval" type="number" min="0" value="5" class="mt-1 w-full rounded-lg border border-black/10 px-3 py-2" /></div>
+        <div><label class="text-xs text-brand-500">Marketing Process</label><input id="d_marketing" type="number" min="0" value="7" class="mt-1 w-full rounded-lg border border-black/10 px-3 py-2" /></div>
+        <div><label class="text-xs text-brand-500">Flyer Sharing Start</label><input id="d_flyer" type="number" min="0" value="2" class="mt-1 w-full rounded-lg border border-black/10 px-3 py-2" /></div>
+      </div>
+    </div>
+
+    <div class="mt-6 flex items-center justify-end gap-3">
+      <button id="saveEvent" class="btn btn-primary">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- DETAILS MODAL -->
+<div id="detailsModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center p-4">
+  <div class="card w-full max-w-5xl p-6 relative">
+    <button class="absolute right-3 top-3 btn btn-ghost" id="closeDetailsModal">✕</button>
+    <div id="detailsContent"></div>
+  </div>
+</div>
+
+<!-- LOGIN MODAL -->
+<div id="loginModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center p-4">
+  <div class="card w-full max-w-sm p-6 relative">
+    <button class="absolute right-3 top-3 btn btn-ghost" id="closeLoginModal">✕</button>
+    <h3 class="text-xl font-semibold text-brand-900 mb-1">Admin Login</h3>
+    <p class="text-sm text-brand-500 mb-4">Demo: <strong>admin@adss.lk</strong> / <strong>admin123</strong></p>
+    <div class="space-y-3">
+      <div>
+        <label class="text-xs text-brand-500">Email</label>
+        <input id="loginEmail" class="mt-1 w-full rounded-lg border border-black/10 px-3 py-2" placeholder="admin@adss.lk" />
+      </div>
+      <div>
+        <label class="text-xs text-brand-500">Password</label>
+        <input id="loginPass" type="password" class="mt-1 w-full rounded-lg border border-black/10 px-3 py-2" placeholder="••••••••" />
+      </div>
+      <button id="doLogin" class="btn btn-primary w-full">Login</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ======= UTIL ======= */
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const ls = {
+  get:(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},
+  set:(k,v)=>localStorage.setItem(k,JSON.stringify(v))
+};
+const fmtDate = s => s ? new Date(s).toISOString().slice(0,10) : "";
+const human = s => s ? new Date(s).toLocaleDateString() : "—";
+const todayStr = () => new Date().toISOString().slice(0,10);
+const addDays = (dateStr, d)=>{const dt=new Date(dateStr);dt.setDate(dt.getDate()+Number(d||0));return dt.toISOString().slice(0,10)};
+const diffDays = (a,b)=>{const da=new Date(a), db=new Date(b);return Math.round((da-db)/(1000*60*60*24))};
+
+/* ======= STATE ======= */
+const KEY_EVENTS="adss_pems_events", KEY_ARCH="adss_pems_archive", KEY_AUTH="adss_pems_auth";
+let EVENTS=ls.get(KEY_EVENTS,[]), ARCHIVE=ls.get(KEY_ARCH,[]), AUTH=ls.get(KEY_AUTH,{role:"guest"});
+
+const STEPS=[
+  {key:"initialDiscussion",label:"Initial Discussion"},
+  {key:"execApproval",     label:"Executive Board Approval"},
+  {key:"approvalProcess",  label:"Approval Process"},
+  {key:"marketingProcess", label:"Marketing Process"},
+  {key:"flyerSharing",     label:"Flyer Sharing"},
+  {key:"eventDate",        label:"Event Date"}
+];
+const MAX_ACTIVE=8;
+
+/* ======= AUTH ======= */
+function syncAuthUI(){
+  const isAdmin=AUTH.role==="admin";
+  $("#roleChip").textContent=isAdmin?"Admin":"Guest";
+  $("#roleChip").className="badge "+(isAdmin?"bg-gold-50 text-gold-700 border":"bg-brand-100 text-brand-700");
+  $("#openCreateModal").disabled=!isAdmin;
+  $("#loginBtn").classList.toggle("hidden",isAdmin);
+  $("#logoutBtn").classList.toggle("hidden",!isAdmin);
+}
+$("#loginBtn").onclick=()=>$("#loginModal").classList.remove("hidden");
+$("#closeLoginModal").onclick=()=>$("#loginModal").classList.add("hidden");
+$("#doLogin").onclick=()=>{
+  const e=$("#loginEmail").value.trim(), p=$("#loginPass").value.trim();
+  if(e==="admin@adss.lk"&&p==="admin123"){ AUTH={role:"admin",email:e}; ls.set(KEY_AUTH,AUTH); $("#loginModal").classList.add("hidden"); syncAuthUI(); }
+  else alert("Invalid credentials");
+};
+$("#logoutBtn").onclick=()=>{AUTH={role:"guest"}; ls.set(KEY_AUTH,AUTH); syncAuthUI();};
+
+/* ======= CREATE ======= */
+$("#openCreateModal").onclick=()=>{
+  if(EVENTS.length>=MAX_ACTIVE){ alert("Limit reached: 8 active events."); return; }
+  resetCreateForm(); $("#createModal").classList.remove("hidden");
+};
+$("#closeCreateModal").onclick=()=>$("#createModal").classList.add("hidden");
+function resetCreateForm(){
+  $("#evName").value=""; $("#evOwner").value="";
+  $("#evStart").value=fmtDate(todayStr()); $("#evDate").value="";
+  $("#d_discuss").value=2; $("#d_exec").value=3; $("#d_approval").value=5; $("#d_marketing").value=7; $("#d_flyer").value=2;
+}
+$("#saveEvent").onclick=()=>{
+  const name=$("#evName").value.trim(), owner=$("#evOwner").value.trim(), start=$("#evStart").value, target=$("#evDate").value;
+  if(!name||!owner||!start||!target){ alert("Please fill name, owner, start date & event date."); return; }
+  const p1=addDays(start,$("#d_discuss").value);
+  const p2=addDays(p1,$("#d_exec").value);
+  const p3=addDays(p2,$("#d_approval").value);
+  const p4=addDays(p3,$("#d_marketing").value);
+  const p5=addDays(p4,$("#d_flyer").value);
+
+  const ev={
+    id:"ev_"+Math.random().toString(36).slice(2,8),
+    title:name, owner, startDate:start,
+    planned:{initialDiscussion:p1,execApproval:p2,approvalProcess:p3,marketingProcess:p4,flyerSharing:p5,eventDate:target},
+    actual:{initialDiscussion:null,execApproval:null,approvalProcess:null,marketingProcess:null,flyerSharing:null,eventDate:null},
+    flyerSchedule:[], status:"active"
+  };
+  EVENTS.push(ev); ls.set(KEY_EVENTS,EVENTS); $("#createModal").classList.add("hidden"); renderAll();
+};
+
+/* ======= STATUS HELPERS ======= */
+function stepStatus(planned, actual){
+  if(!planned) return "—";
+  if(!actual) return (new Date(planned) < new Date()) ? "Delayed" : "Pending";
+  return new Date(actual) <= new Date(planned) ? "On-time" : "Delayed";
+}
+function eventOverallStatus(ev){
+  const anyDelayed = STEPS.some(s=> stepStatus(ev.planned[s.key], ev.actual[s.key])==="Delayed");
+  if(anyDelayed) return "delayed";
+  const dueToday = STEPS.some(s=> ev.planned[s.key] && new Date(ev.planned[s.key]).toDateString()===new Date().toDateString());
+  return dueToday ? "today" : "ontime";
+}
+
+/* ======= TIMELINE RENDERERS ======= */
+// Mini timeline for card footer (dots only)
+function renderMiniTimeline(ev){
+  return `
+    <div class="flex items-center gap-2 mt-3">
+      ${STEPS.map((s,i)=>{
+        const st=stepStatus(ev.planned[s.key], ev.actual[s.key]);
+        const c = st==="On-time" ? "bg-emerald-500" : st==="Delayed" ? "bg-danger-500" : "bg-brand-300";
+        const rail = i<STEPS.length-1 ? `<div class="flex-1 tl-rail bg-brand-200 rounded"></div>`:"";
+        return `<div class="flex items-center gap-2 min-w-0">
+          <div class="tl-mini-dot ${c}"></div>${rail}
+        </div>`;
+      }).join("")}
+    </div>`;
+}
+
+// Full timeline with dates, day deltas & tick toggles
+function renderFullTimeline(ev){
+  const nodes = STEPS.map((s,idx)=>{
+    const p=ev.planned[s.key], a=ev.actual[s.key];
+    const st=stepStatus(p,a);
+    const color = st==="On-time" ? "bg-emerald-500" : st==="Delayed" ? "bg-danger-500" : "bg-brand-300";
+    const ring  = st==="On-time" ? "ring-emerald-200" : st==="Delayed" ? "ring-red-200" : "ring-brand-200";
+    const icon  = a ? "✓" : "";
+    // Deltas
+    let deltaLbl=""; 
+    if(!a && p){ // pending: days left or overdue
+      const dd = diffDays(p, todayStr());
+      deltaLbl = dd>=0 ? `${dd}d left` : `${Math.abs(dd)}d overdue`;
+    } else if(a && p){
+      const dd = diffDays(a, p);
+      deltaLbl = dd<=0 ? `on time` : `${dd}d late`;
+    }
+    const rail = idx<STEPS.length-1 ? `<div class="flex-1 tl-rail ${st==="Delayed"?"bg-danger-500/50":"bg-brand-200"} rounded"></div>`:"";
+    return `
+      <div class="flex items-center gap-3 min-w-0">
+        <button class="tl-dot ${color} ring-2 ${ring}" data-tick="${s.key}" title="Toggle tick">${icon}</button>
+        <div class="min-w-0">
+          <div class="text-sm font-semibold text-brand-900">${s.label}</div>
+          <div class="text-xs text-brand-500">
+            Planned: <strong>${human(p)}</strong> · ${a?`Done: <strong>${human(a)}</strong>`:`Not done`}
+            · <span class="${st==="Delayed"?"text-danger-500":st==="On-time"?"text-emerald-600":"text-brand-500"}">${deltaLbl}</span>
+          </div>
+        </div>
+        ${rail}
+      </div>`;
+  }).join("");
+  return `<div class="w-full overflow-x-auto"><div class="min-w-[720px] grid" style="grid-template-columns: repeat(${STEPS.length*2-1}, minmax(0,1fr)); gap:.75rem">${nodes}</div></div>`;
+}
+
+/* ======= CARDS/ARCHIVE ======= */
+function renderEventCard(ev){
+  const overall=eventOverallStatus(ev);
+  const badge= overall==="delayed" ? `<span class="badge bg-red-50 text-danger-500 border">Delayed</span>`
+              : overall==="today"   ? `<span class="badge bg-blue-50 text-info-500 border">Due Today</span>`
+              : `<span class="badge bg-emerald-50 text-emerald-500 border">On-time</span>`;
+  const prog = Math.round(STEPS.filter(s=>ev.actual[s.key]).length/STEPS.length*100);
+
+  return `
+  <div class="card p-5 flex flex-col">
+    <div class="flex items-start justify-between gap-3">
+      <div>
+        <div class="text-sm text-brand-500">${ev.owner}</div>
+        <h3 class="text-lg font-semibold text-brand-900">${ev.title}</h3>
+      </div>
+      ${badge}
+    </div>
+
+    <div class="mt-3">
+      <div class="h-2 bg-brand-100 rounded-full overflow-hidden"><div class="h-full bg-gradient-to-r from-gold-500 to-gold-300" style="width:${prog}%"></div></div>
+      <div class="mt-1 text-xs text-brand-500">${prog}% complete</div>
+    </div>
+
+    ${renderMiniTimeline(ev)}
+
+    <div class="mt-4 flex items-center justify-between gap-2">
+      <button class="btn btn-ghost" data-open-details="${ev.id}">Open</button>
+      <button class="btn btn-primary" data-finish="${ev.id}">Finish</button>
+    </div>
+  </div>`;
+}
+function renderArchiveCard(ev){
+  return `<div class="card p-5">
+    <div class="text-sm text-brand-500">${ev.owner}</div>
+    <div class="text-lg font-semibold text-brand-900">${ev.title}</div>
+    <div class="mt-2 text-xs text-brand-500">Event date: ${human(ev.planned.eventDate)}</div>
+  </div>`;
+}
+
+/* ======= FILTERS & DASHBOARD ======= */
+let CURRENT_FILTER="all";
+$$('[data-filter]').forEach(b=> b.onclick=()=>{CURRENT_FILTER=b.dataset.filter; renderAll();});
+function applyFilter(list,f){
+  if(f==="ontime") return list.filter(e=>eventOverallStatus(e)==="ontime");
+  if(f==="delayed")return list.filter(e=>eventOverallStatus(e)==="delayed");
+  if(f==="today")  return list.filter(e=>eventOverallStatus(e)==="today");
+  return list;
+}
+function renderDashboard(){
+  $("#activeCount").textContent=`${EVENTS.length}/${MAX_ACTIVE} active`;
+  const list=applyFilter(EVENTS,CURRENT_FILTER);
+  $("#eventGrid").innerHTML=list.map(renderEventCard).join("") || `<div class="text-sm text-brand-500">No events.</div>`;
+  $("#archiveList").innerHTML=ARCHIVE.map(renderArchiveCard).join("") || `<div class="text-sm text-brand-500">No archived events.</div>`;
+
+  $$('[data-open-details]').forEach(b=>{
+    b.onclick=()=> openDetails(EVENTS.find(x=>x.id===b.dataset.openDetails));
+  });
+  $$('[data-finish]').forEach(b=>{
+    b.onclick=()=>{
+      const id=b.dataset.finish, idx=EVENTS.findIndex(x=>x.id===id);
+      if(idx>-1){ const ev=EVENTS[idx]; ev.status="finished"; ARCHIVE.unshift(ev); EVENTS.splice(idx,1); ls.set(KEY_EVENTS,EVENTS); ls.set(KEY_ARCH,ARCHIVE); renderAll(); }
+    };
+  });
+}
+$("#clearArchive").onclick=()=>{ if(confirm("Clear all archived items?")){ ARCHIVE=[]; ls.set(KEY_ARCH,ARCHIVE); renderAll(); } };
+
+/* ======= DETAILS/TIMELINE ======= */
+function openDetails(ev){
+  const timeline = renderFullTimeline(ev);
+  $("#detailsContent").innerHTML = `
+    <div class="flex items-start justify-between gap-3">
+      <div>
+        <div class="text-sm text-brand-500">${ev.owner}</div>
+        <h3 class="text-2xl font-semibold text-brand-900">${ev.title}</h3>
+      </div>
+      <div class="text-sm text-brand-500">Start: <strong>${human(ev.startDate)}</strong></div>
+    </div>
+
+    <div class="card p-4 mt-4">
+      <h4 class="font-semibold text-brand-900 mb-2">Timeline (dates, days, ticks)</h4>
+      ${timeline}
+      <p class="text-xs text-brand-500 mt-2">Tip: Click a colored dot to toggle ✓ (mark done / undo).</p>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-6 mt-6">
+      <!-- Lifecycle Table -->
+      <div class="card p-4 md:col-span-2">
+        <h4 class="font-semibold text-brand-900">Lifecycle Table</h4>
+        <table class="w-full text-sm mt-2">
+          <thead class="text-left text-brand-500">
+            <tr><th class="px-3 py-2">Step</th><th class="px-3 py-2">Planned</th><th class="px-3 py-2">Actual</th><th class="px-3 py-2">Status</th><th class="px-3 py-2">Action</th></tr>
+          </thead>
+          <tbody>
+            ${STEPS.map(s=>{
+              const p=ev.planned[s.key], a=ev.actual[s.key]; const st=stepStatus(p,a);
+              const badge=st==="On-time"?"bg-emerald-50 text-emerald-600 border-emerald-200":st==="Delayed"?"bg-red-50 text-danger-500 border-red-200":"bg-brand-100 text-brand-700 border-brand-200";
+              return `<tr class="border-t">
+                <td class="px-3 py-2">${s.label}</td>
+                <td class="px-3 py-2">${human(p)}</td>
+                <td class="px-3 py-2">${human(a)}</td>
+                <td class="px-3 py-2"><span class="badge border ${badge}">${st}</span></td>
+                <td class="px-3 py-2">
+                  <button class="btn btn-ghost text-xs" data-mark="${s.key}">${a?"Undo":"✓ Mark Done"}</button>
+                </td>
+              </tr>`;
+            }).join("")}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Finish -->
+      <div class="card p-4">
+        <h4 class="font-semibold text-brand-900">Complete Event</h4>
+        <p class="text-sm text-brand-600">When the event is finished, move it to archive.</p>
+        <button class="btn btn-primary mt-3" id="finishNow">Finish & Archive</button>
+      </div>
+    </div>
+  `;
+  $("#detailsModal").classList.remove("hidden");
+
+  // Toggle tick from timeline dot
+  $$('[data-tick]').forEach(btn=>{
+    btn.onclick=()=>{
+      const k=btn.dataset.tick;
+      if(ev.actual[k]){ ev.actual[k]=null; } else { ev.actual[k]=todayStr(); }
+      ls.set(KEY_EVENTS,EVENTS); openDetails(ev); renderAll();
+    };
+  });
+
+  // Mark/Undo from table
+  $$('[data-mark]').forEach(btn=>{
+    btn.onclick=()=>{
+      const k=btn.dataset.mark;
+      ev.actual[k] = ev.actual[k]?null:todayStr();
+      ls.set(KEY_EVENTS,EVENTS); openDetails(ev); renderAll();
+    };
+  });
+
+  $("#finishNow").onclick=()=>{
+    const idx=EVENTS.findIndex(x=>x.id===ev.id);
+    if(idx>-1){ ev.status="finished"; ARCHIVE.unshift(ev); EVENTS.splice(idx,1); ls.set(KEY_EVENTS,EVENTS); ls.set(KEY_ARCH,ARCHIVE); $("#detailsModal").classList.add("hidden"); renderAll(); }
+  };
+}
+$("#closeDetailsModal").onclick=()=>$("#detailsModal").classList.add("hidden");
+
+/* ======= CALENDAR ======= */
+let CAL=(()=>{const n=new Date();return{y:n.getFullYear(),m:n.getMonth()}})();
+function renderCalendar(){
+  const first=new Date(CAL.y, CAL.m, 1), last=new Date(CAL.y, CAL.m+1, 0);
+  $("#calTitle").textContent=first.toLocaleString(undefined,{month:"long",year:"numeric"});
+  const pad=first.getDay(); const cells=[];
+  for(let i=0;i<pad;i++) cells.push(`<div class="py-2 text-xs text-brand-300">&nbsp;</div>`);
+  for(let d=1; d<=last.getDate(); d++){
+    const dateStr=new Date(CAL.y, CAL.m, d).toISOString().slice(0,10);
+    const evHit=EVENTS.some(e=> e.planned.eventDate && fmtDate(e.planned.eventDate)===dateStr);
+    const flyerHit=EVENTS.some(e=> (e.flyerSchedule||[]).some(x=> fmtDate(x)===dateStr));
+    cells.push(`<div class="bg-white border border-black/5 rounded-lg p-1 h-16 relative">
+      <div class="text-[11px] text-right text-brand-500">${d}</div>
+      <div class="absolute left-1 bottom-1 flex gap-1">
+        ${evHit?`<span class="inline-block w-2 h-2 rounded-full bg-info-500"></span>`:""}
+        ${flyerHit?`<span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>`:""}
+      </div>
+    </div>`);
+  }
+  $("#calendar").innerHTML=cells.join("");
+}
+$("#prevMonth").onclick=()=>{CAL.m--; if(CAL.m<0){CAL.m=11;CAL.y--} renderCalendar();};
+$("#nextMonth").onclick=()=>{CAL.m++; if(CAL.m>11){CAL.m=0;CAL.y++} renderCalendar();};
+
+/* ======= BOOT ======= */
+function renderAll(){ renderDashboard(); renderCalendar(); }
+syncAuthUI(); renderAll();
+</script>
+</body>
+</html>
